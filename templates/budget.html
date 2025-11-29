@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Budget Management - Finance Manager</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: #0d7ff1; /* Dark Blue */
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+        ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  border: 1px solid #e7e7e7;
+  background-color: #f3f3f3;
+}
+.stat-card {
+            background-color: #FFFFFF;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+}
+.input {
+    width: 60%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    display: block;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0,
+    0, 0.2);
+}
+.prediction-box {
+    margin: 40px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    width: 40%;
+    text-align: center;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+}
+.prediction-box h3 {
+    margin-bottom: 15px;    
+    color: #0d7ff1;
+}
+.button_submit {
+    background-color: #0d7ff1;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.button_submit:hover {      
+    background-color: #0b66c2;
+}
+
+
+
+
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; padding: 20px; color: white;">Budget Management</h1>
+    <div style="padding: 20px; background-color: white; margin: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+        <h2>Create a New Budget</h2>
+        <form id="transactionForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="amount">Income</label>
+                        <input type="number" id="income" name="amount" placeholder="0.00" step="0.01" min="0" required class="input">
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Age</label>
+                        <input type="number" id="age" name="amount" placeholder="" step="0.01" min="0" required class="input">
+                    </div>
+
+
+
+
+                    <div class="form-group">
+                        <label for="category">Gender</label>
+                        <select id="gender" name="category" required class="input">
+                            <option value="">-- Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                           
+                        </select>
+                        <div class="category-hint" id="categoryHint"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Education</label>
+                        <select id="education" name="category" required class="input">
+                            <option value="">-- Select Education level --</option>
+                            <option value="High School">High School</option>
+                            <option value="Bachelor">Undergraduate</option>
+                            <option value="Master">Masters</option>
+                            <option value="PHD">PHD</option>
+                        </select>
+                        <div class="category-hint" id="categoryHint"></div>
+                    </div>
+
+
+
+
+                     <div class="form-group">
+                        <label for="frequency">Purchase Frequency</label>
+                        <input type="number" id="frequency" name="amount" placeholder="0.4" step="0.01" min="0" required class="input">
+                    </div>
+                </div>
+
+
+
+
+                <div id="alertMessage" class="alert"></div>
+
+
+
+                <button type="submit" class="button_submit">Predict Spending</button>
+            </form>
+           
+            <div class="prediction-box">
+                <h3>Predicted Monthly Spending:</h3>
+                <h2 id="predictedSpending">$0.00</h2>
+
+
+    </div>
+
+
+       <h2 id = "transactionAdd">Add Transition</h2>
+       <form id = "transactionAddForm">
+        <input type="text" id="transUser" placeholder="User Name" required class = "input">
+        <input type="number" id="amount" placeholder="Amount" step="0.01" required class = "input">
+        <select id="category" required class="input">
+    <option value="">-- Select Category --</option>
+    <option value="Food">Food</option>
+    <option value="Transport">Transportation</option>
+    <option value="Entertainment">Entertainment</option>
+    <option value="Utilities">Utilities</option>
+    <option value="Healthcare">Healthcare</option>
+    <option value="Other">Other</option>
+</select>
+        <select id="type" required class = "input">
+            <option value="Income">Income</option>
+            <option value="Expense">Expense</option>
+        </select>
+        <button type="submit" class="button_submit">Add Transaction</button>
+       </form>
+           <div class="stat-card">
+                <h3 id="totalIncome">Total Income: $0.00</h3>
+                <h3 id="totalExpenses">Total Expenses: $0.00</h3>
+            </div>
+        <div class="prediction-box">
+        <h3>User Summary</h3>
+        <div id="userSummary">No transactions yet.</div>
+    </div>
+
+
+           
+<script>
+    document.getElementById('transactionForm').addEventListener('submit', function(event) {
+        event.preventDefault();  
+    const form_data = {
+    income: parseFloat(document.getElementById('income').value),
+    age: parseInt(document.getElementById('age').value),
+    gender: document.getElementById('gender').value, 
+    education: document.getElementById('education').value, 
+    frequency: parseFloat(document.getElementById('frequency').value),
+    requestType: 'financialPrediction'
+    }
+    fetch('/predict', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(form_data),
+    })  .then(response => response.json())
+        .then(data => {
+            document.getElementById('predictedSpending').innerText = `$${data.predicted_spending.toFixed(2)}`;
+        })  .catch((error) => {
+            console.error('Error:', error);
+        });
+   
+    });  
+
+
+
+
+document.getElementById('transactionAddForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const transData = {
+        name: document.getElementById('transUser').value,
+        amount: parseFloat(document.getElementById('amount').value),
+        category: document.getElementById('category').value,
+        type: document.getElementById('type').value
+    };
+
+    fetch('/add_transaction', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(transData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success'){
+            fetch('/transaction_summary', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: transData.name}),
+                    
+            })
+            .then(res => res.json())
+            .then(summary => {
+            
+            document.getElementById('totalIncome').innerText = `Total Income: $${summary.total_income.toFixed(2)}`;
+            document.getElementById('totalExpenses').innerText = `Total Expenses: $${summary.total_spent.toFixed(2)}`;
+
+            let summaryHtml = '<ul>';
+            for(const [category, amount] of Object.entries(summary.category_summary)){
+                summaryHtml += `<li>${category}: $${amount.toFixed(2)}</li>`;
+            }
+            summaryHtml += '</ul>';
+            document.getElementById('userSummary').innerHTML = summaryHtml;
+            })
+        }
+    })
+    .catch(err => console.error(err));
+});
+</script>
+</body>
+</html>    
+
+
+
