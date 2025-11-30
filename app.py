@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify, render_template
 from transaction import Transaction
 import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
 app = Flask(__name__)
 
 df = pd.read_csv('customer_data.csv')
@@ -27,11 +30,94 @@ rf = RandomForestRegressor(
 
 rf.fit(X_train, y_train)
 
-@app.route('/')
+TRANSACTION_FILE = "transactions.csv"
+COLS = ["username", "income", "expense", "category"]
+
+def load_transactions():
+    try:
+        return pd.read_csv(TRANSACTION_FILE, header=None, names=COLS)
+    except FileNotFoundError:
+        return pd.DataFrame(columns=COLS)
+
+def save_transactions(df):
+    df.to_csv(TRANSACTION_FILE, index=False, header=False)
+
+def make_user_category_expense_plot(username, category):
+    df = load_transactions()
+    mask = (df["username"] == username) & (df["expense"] > 0)
+    df_u = df[mask].copy()
+    if df_u.empty:
+        return None
+
+    df_u = df_u.reset_index(drop=True)
+    df_u["tx_index"] = df_u.index + 1
+    df_u["cumulative_expense"] = df_u["expense"].cumsum()
+
+    plt.figure()
+    plt.plot(df_u["tx_index"], df_u["cumulative_expense"], marker="o")
+    plt.title(f"{username}'s cumulative expenses")
+    plt.xlabel("Transaction #")
+    plt.ylabel("Total expenses")
+
+    os.makedirs("static/plots", exist_ok=True)
+    safe_user = username.replace(" ", "_")
+    rel_name = f"plots/{safe_user}_expenses.png"
+    full_path = os.path.join("static", rel_name)
+    plt.savefig(full_path, bbox_inches="tight")
+    plt.close()
+    return rel_name
+
+@app.route('/', methods=["GET", "POST"])
 def home():
-    return render_template('budget.html')   
+    df_all = load_transactions()
+    plot_filename = None
+    selected_user = None
+    selected_category = None
 
+    if "username" in request.form:
+        username = request.form["username"]
+        amount = float(request.form["amount"])
+        ttype = request.form["type"]  # "Income" or "Expense"
+        category = request.form["category"]
 
+        # save transaction if Add Transaction form was used
+        if username and amount and category and ttype:
+            try:
+                amount = float(amount)
+            except ValueError:
+                amount = 0.0
+
+            income = amount if ttype == "Income" else 0.0
+            expense = amount if ttype == "Expense" else 0.0
+
+            new_row = pd.DataFrame([{
+                "username": username,
+                "income": income,
+                "expense": expense,
+                "category": category,
+            }])
+
+            df_all = pd.concat([df_all, new_row], ignore_index=True)
+            save_transactions(df_all)
+
+            if ttype == "Expense":
+                selected_user = username
+                selected_category = category
+                plot_filename = make_user_category_expense_plot(username, category)
+
+    total_income = float(df_all["income"].sum()) if not df_all.empty else 0.0
+    total_expenses = float(df_all["expense"].sum()) if not df_all.empty else 0.0
+    predicted_spending = 0.0
+
+    return render_template(
+        "budget.html",
+        plot_filename=plot_filename,
+        selected_user=selected_user,
+        selected_category=selected_category,
+        total_income=total_income,
+        total_expenses=total_expenses,
+        predicted_spending=predicted_spending,
+    )
 
 @app.route('/predict', methods=['POST'])
 def predict():
