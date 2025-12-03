@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify, render_template
 from transaction import Transaction
-import pandas as pd
-import matplotlib.pyplot as plt
 import os
+import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
@@ -154,7 +156,15 @@ def add_transaction():
 
         tr = Transaction(data['name'], amount, income, category)
         tr.transaction_to_csv()
-        return jsonify({'status': 'success'})
+
+        plot_filename = None
+        if ttype == "Expense":
+            plot_filename = make_user_category_expense_plot(data['name'], category)
+
+        return jsonify({
+            'status': 'success',
+            'plot_filename': plot_filename
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 400      
 

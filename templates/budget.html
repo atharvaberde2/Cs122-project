@@ -165,80 +165,95 @@
         <div class="prediction-box">
         <h3>User Summary</h3>
         <div id="userSummary">No transactions yet.</div>
+            <img
+                id="expenseChart"
+                alt="Expense Chart"
+                style="max-width: 600px;
+                    width: 100%,
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                    border-radius: 8px;
+                    margin-top: 15px;
+                    display: none;"
+            >
     </div>
 
 
-           
-<script>
-    document.getElementById('transactionForm').addEventListener('submit', function(event) {
+
+    <script>
+        document.getElementById('transactionForm').addEventListener('submit', function(event) {
         event.preventDefault();  
-    const form_data = {
-    income: parseFloat(document.getElementById('income').value),
-    age: parseInt(document.getElementById('age').value),
-    gender: document.getElementById('gender').value, 
-    education: document.getElementById('education').value, 
-    frequency: parseFloat(document.getElementById('frequency').value),
-    requestType: 'financialPrediction'
-    }
-    fetch('/predict', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(form_data),
-    })  .then(response => response.json())
-        .then(data => {
-            document.getElementById('predictedSpending').innerText = `$${data.predicted_spending.toFixed(2)}`;
-        })  .catch((error) => {
-            console.error('Error:', error);
-        });
+        const form_data = {
+            income: parseFloat(document.getElementById('income').value),
+            age: parseInt(document.getElementById('age').value),
+            gender: document.getElementById('gender').value,
+            education: document.getElementById('education').value,
+            frequency: parseFloat(document.getElementById('frequency').value),
+            requestType: 'financialPrediction'
+        }
+        fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(form_data),
+        })  .then(response => response.json())
+            .then(data => {
+                document.getElementById('predictedSpending').innerText = `$${data.predicted_spending.toFixed(2)}`;
+            })  .catch((error) => {
+                console.error('Error:', error);
+            });
    
-    });  
+        });
 
+        document.getElementById('transactionAddForm').addEventListener('submit', function(e){
+            e.preventDefault();
+            const transData = {
+                name: document.getElementById('transUser').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value,
+                type: document.getElementById('type').value
+            };
 
-
-
-document.getElementById('transactionAddForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    const transData = {
-        name: document.getElementById('transUser').value,
-        amount: parseFloat(document.getElementById('amount').value),
-        category: document.getElementById('category').value,
-        type: document.getElementById('type').value
-    };
-
-    fetch('/add_transaction', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(transData)
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.status === 'success'){
-            fetch('/transaction_summary', {
+            fetch('/add_transaction', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name: transData.name}),
-                    
+                body: JSON.stringify(transData)
             })
             .then(res => res.json())
-            .then(summary => {
-            
-            document.getElementById('totalIncome').innerText = `Total Income: $${summary.total_income.toFixed(2)}`;
-            document.getElementById('totalExpenses').innerText = `Total Expenses: $${summary.total_spent.toFixed(2)}`;
+            .then(data => {
+                if(data.status === 'success'){
+                    fetch('/transaction_summary', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({name: transData.name}),
+                    
+                    })
+                    .then(res => res.json())
+                    .then(summary => {
+                        document.getElementById('totalIncome').innerText = `Total Income: $${summary.total_income.toFixed(2)}`;
+                        document.getElementById('totalExpenses').innerText = `Total Expenses: $${summary.total_spent.toFixed(2)}`;
 
-            let summaryHtml = '<ul>';
-            for(const [category, amount] of Object.entries(summary.category_summary)){
-                summaryHtml += `<li>${category}: $${amount.toFixed(2)}</li>`;
-            }
-            summaryHtml += '</ul>';
-            document.getElementById('userSummary').innerHTML = summaryHtml;
+                        let summaryHtml = '<ul>';
+                        for(const [category, amount] of Object.entries(summary.category_summary)){
+                            summaryHtml += `<li>${category}: $${amount.toFixed(2)}</li>`;
+                        }
+                        summaryHtml += '</ul>';
+                        document.getElementById('userSummary').innerHTML = summaryHtml;
+                    });
+
+                    if (data.plot_filename) {
+                        const chartImg = document.getElementById('expenseChart');
+                        chartImg.src = `/static/${data.plot_filename}?t=${Date.now()}`;
+                        chartImg.style.display = 'block';
+                    }
+                } else if (data.error) {
+                    console.error("Add transaction error:", data.error);
+                }
             })
-        }
-    })
-    .catch(err => console.error(err));
-});
-</script>
+        .catch(err => console.error(err));
+        });
+        </script>
 </body>
 </html>    
 
